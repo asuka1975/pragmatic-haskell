@@ -1,6 +1,9 @@
 module Main (main) where
 
-import Lib
+import Janken.Hands as Janken
 
 main :: IO ()
-main = someFunc
+main = do
+    print $ Janken.game Janken.Goo Janken.Goo
+    print $ Janken.game Janken.Goo Janken.Par
+    print $ Janken.game Janken.Goo Janken.Choki

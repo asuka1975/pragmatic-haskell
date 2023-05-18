@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Janken.Hands
       Lib
   other-modules:
       Paths_error_handling
