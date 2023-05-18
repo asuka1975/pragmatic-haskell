@@ -1,4 +1,4 @@
-# Changelog for `error`
+# Changelog for `error-handling`
 
 All notable changes to this project will be documented in this file.
 
