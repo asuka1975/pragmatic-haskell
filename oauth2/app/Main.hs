@@ -1,13 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module Main (main) where
+
+import Codec.Binary.UTF8.String
+import qualified Data.ByteString as S
 
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai as Wai
 import qualified Network.HTTP.Types as HTypes
 
+import OAuth2.AuthEndpoint
+
 main :: IO ()
-main = Warp.run 8080 router
+main = do 
+    print "Running on http://127.0.0.1:8080"
+    Warp.run 8080 router
 
 router :: Wai.Application
 router req = 
@@ -18,7 +24,12 @@ router req =
         _               -> notFound req
 
 auth :: Wai.Application
-auth req send = send $ Wai.responseBuilder HTypes.status200 [] ""
+auth req send = do
+    print $ createRequestFromQuery $ Wai.queryString req
+    send $ Wai.responseBuilder 
+           HTypes.status200 
+           [("Content-Type", "text/plain")] 
+           ""
 
 authcheck :: Wai.Application
 authcheck req send = send $ Wai.responseBuilder HTypes.status200 [] ""

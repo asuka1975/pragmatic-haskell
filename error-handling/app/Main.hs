@@ -2,8 +2,14 @@ module Main (main) where
 
 import Janken.Hands as Janken
 
+f :: Int -> Int
+f a = a * 2
+
+test :: Maybe Int
+test = do
+    s <- fmap f $ Just 1
+    return s
+
 main :: IO ()
 main = do
-    print $ Janken.game Janken.Goo Janken.Goo
-    print $ Janken.game Janken.Goo Janken.Par
-    print $ Janken.game Janken.Goo Janken.Choki
+    print $ test

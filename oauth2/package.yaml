@@ -24,6 +24,7 @@ dependencies:
 - wai
 - warp
 - http-types
+- bytestring
 
 ghc-options:
 - -Wall
@@ -38,6 +39,9 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - split
+  - containers
 
 executables:
   oauth2-exe:
@@ -49,6 +53,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - oauth2
+    - utf8-string
 
 tests:
   oauth2-test:
