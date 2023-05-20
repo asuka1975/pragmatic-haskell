@@ -21,6 +21,11 @@ data Request = Request {
   , codeChallengeMethod :: Maybe S.ByteString
 } deriving (Show)
 
+data Response = Response {
+    code  :: S.ByteString
+    state :: Maybe S.ByteString
+}
+
 parseScope :: Maybe S.ByteString -> [S.ByteString]
 parseScope Nothing  = []
 parseScope (Just s) = map S.pack $ splitOn (S.unpack $ S.singleton 58) (S.unpack s)
