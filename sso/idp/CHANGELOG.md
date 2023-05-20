@@ -1,4 +1,4 @@
-# Changelog for `ssoapp`
+# Changelog for `idp`
 
 All notable changes to this project will be documented in this file.
 

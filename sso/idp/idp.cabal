@@ -4,11 +4,11 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 
-name:           oauth2
+name:           idp
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/oauth2#readme>
-homepage:       https://github.com/githubuser/oauth2#readme
-bug-reports:    https://github.com/githubuser/oauth2/issues
+description:    Please see the README on GitHub at <https://github.com/githubuser/idp#readme>
+homepage:       https://github.com/githubuser/idp#readme
+bug-reports:    https://github.com/githubuser/idp/issues
 author:         Author name here
 maintainer:     example@example.com
 copyright:      2023 Author name here
@@ -21,57 +21,41 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/oauth2
+  location: https://github.com/githubuser/idp
 
 library
   exposed-modules:
       Lib
-      OAuth2.AuthEndpoint
   other-modules:
-      Paths_oauth2
+      Paths_idp
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
-    , bytestring
-    , containers
-    , http-types
-    , split
-    , wai
-    , warp
   default-language: Haskell2010
 
-executable oauth2-exe
+executable idp-exe
   main-is: Main.hs
   other-modules:
-      Paths_oauth2
+      Paths_idp
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , bytestring
-    , http-types
-    , oauth2
-    , utf8-string
-    , wai
-    , warp
+    , idp
   default-language: Haskell2010
 
-test-suite oauth2-test
+test-suite idp-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_oauth2
+      Paths_idp
   hs-source-dirs:
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , bytestring
-    , http-types
-    , oauth2
-    , wai
-    , warp
+    , idp
   default-language: Haskell2010
