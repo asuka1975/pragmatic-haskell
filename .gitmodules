@@ -1,3 +1,0 @@
-[submodule "single-login/postgresql"]
-	path = single-login/postgresql
-	url = https://github.com/asuka1975/postgresql.git
