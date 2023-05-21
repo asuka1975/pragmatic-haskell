@@ -50,6 +50,7 @@ library:
   dependencies:
   - cryptohash-sha512
   - bytestring
+  - ede
 
 executables:
   single-login-exe:

@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Application
+      Auth.Authentication
       Auth.Password
       Model
   other-modules:
@@ -37,6 +38,7 @@ library
       base >=4.7 && <5
     , bytestring
     , cryptohash-sha512
+    , ede
     , http-types
     , lens
     , monad-logger
