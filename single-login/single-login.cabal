@@ -25,7 +25,8 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Application
+      Model
   other-modules:
       Paths_single_login
   hs-source-dirs:
@@ -34,8 +35,17 @@ library
   build-depends:
       base >=4.7 && <5
     , http-types
+    , lens
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , resourcet
+    , text
+    , transformers
+    , uuid
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
 
 executable single-login-exe
@@ -48,9 +58,18 @@ executable single-login-exe
   build-depends:
       base >=4.7 && <5
     , http-types
+    , lens
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , resourcet
     , single-login
+    , text
+    , transformers
+    , uuid
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
 
 test-suite single-login-test
@@ -64,7 +83,16 @@ test-suite single-login-test
   build-depends:
       base >=4.7 && <5
     , http-types
+    , lens
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , resourcet
     , single-login
+    , text
+    , transformers
+    , uuid
     , wai
     , warp
+    , yaml
   default-language: Haskell2010
