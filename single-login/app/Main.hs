@@ -17,10 +17,6 @@ main = do
     insertUser pool $ User { _userUid      = show uuid
                            , _userEmail    = "sample@example.com"
                            , _userPassword = "password" }
-    uuid <- nextRandom
-    insertUser pool $ User { _userUid      = show uuid
-                           , _userEmail    = "root@example.com"
-                           , _userPassword = "password" }
     users <- getUsers pool
     print users
     putStrLn $ "Running on http://localhost:" ++ show port
