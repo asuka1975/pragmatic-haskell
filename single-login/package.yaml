@@ -47,6 +47,9 @@ ghc-options:
 
 library:
   source-dirs: src
+  dependencies:
+  - cryptohash-sha512
+  - bytestring
 
 executables:
   single-login-exe:

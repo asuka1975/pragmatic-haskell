@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Application
+      Auth.Password
       Model
   other-modules:
       Paths_single_login
@@ -34,6 +35,8 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , cryptohash-sha512
     , http-types
     , lens
     , monad-logger

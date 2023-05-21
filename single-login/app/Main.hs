@@ -7,11 +7,13 @@ import qualified Network.HTTP.Types as HTypes
 
 import Application
 import Model
+import Auth.Password
 
 import Data.UUID.V4 (nextRandom)
 
 main :: IO ()
 main = do
+    print $ hashedPassword "password"
     uuid <- nextRandom
     pool <- pgPool
     insertUser pool $ User { _userUid      = show uuid
