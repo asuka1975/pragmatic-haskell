@@ -1,0 +1,6 @@
+user    : "_env:PG_USER:postgres"
+password: "_env:PG_PASS:password"
+host    : "_env:PG_HOST:localhost"
+port    : "_env:PG_PORT:5432"
+database: "_env:PG_DATABASE:postgres"
+poolsize: "_env:PG_POOLSIZE:5"

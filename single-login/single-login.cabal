@@ -25,7 +25,10 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Application
+      Auth.Authentication
+      Auth.Password
+      Model
   other-modules:
       Paths_single_login
   hs-source-dirs:
@@ -33,6 +36,26 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , bytestring
+    , cryptohash-sha512
+    , ede
+    , hedis
+    , http-types
+    , lens
+    , monad-logger
+    , mtl
+    , persistent
+    , persistent-postgresql
+    , resourcet
+    , text
+    , transformers
+    , unliftio-core
+    , uuid
+    , vault
+    , wai
+    , wai-session
+    , warp
+    , yaml
   default-language: Haskell2010
 
 executable single-login-exe

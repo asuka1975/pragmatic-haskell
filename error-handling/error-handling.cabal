@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Gamble.User
       Janken.Hands
       Lib
   other-modules:
