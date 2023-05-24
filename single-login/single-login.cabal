@@ -39,16 +39,21 @@ library
     , bytestring
     , cryptohash-sha512
     , ede
+    , hedis
     , http-types
     , lens
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , resourcet
     , text
     , transformers
+    , unliftio-core
     , uuid
+    , vault
     , wai
+    , wai-session
     , warp
     , yaml
   default-language: Haskell2010
@@ -62,19 +67,7 @@ executable single-login-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , http-types
-    , lens
-    , monad-logger
-    , persistent
-    , persistent-postgresql
-    , resourcet
     , single-login
-    , text
-    , transformers
-    , uuid
-    , wai
-    , warp
-    , yaml
   default-language: Haskell2010
 
 test-suite single-login-test
@@ -87,17 +80,5 @@ test-suite single-login-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , http-types
-    , lens
-    , monad-logger
-    , persistent
-    , persistent-postgresql
-    , resourcet
     , single-login
-    , text
-    , transformers
-    , uuid
-    , wai
-    , warp
-    , yaml
   default-language: Haskell2010

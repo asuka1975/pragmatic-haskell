@@ -21,18 +21,6 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- text
-- wai
-- warp
-- http-types
-- persistent
-- persistent-postgresql 
-- yaml
-- lens
-- resourcet
-- transformers
-- monad-logger
-- uuid
 
 ghc-options:
 - -Wall
@@ -51,6 +39,24 @@ library:
   - cryptohash-sha512
   - bytestring
   - ede
+  - text
+  - wai
+  - wai-session
+  - warp
+  - http-types
+  - persistent
+  - persistent-postgresql 
+  - yaml
+  - lens
+  - resourcet
+  - transformers
+  - monad-logger
+  - uuid
+  - vault
+  - hedis
+  - unliftio-core
+  - mtl
+
 
 executables:
   single-login-exe:
