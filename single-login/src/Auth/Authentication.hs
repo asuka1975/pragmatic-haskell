@@ -18,8 +18,6 @@ data SessionStore = SessionStore {
 newtype Auth a = Auth (ReaderT SessionStore IO a)
     deriving (Monad, MonadIO, Functor, Applicative, MonadUnliftIO)
 
--- withAuth :: Auth (Either Wai.Application Wai.Application) -> IO (Either Wai.Application Wai.Application)
-
 authRequired :: ConnectionPool -> String -> (ConnectionPool -> Wai.Application) -> Wai.Application
 authRequired pool from login req send = do
 
