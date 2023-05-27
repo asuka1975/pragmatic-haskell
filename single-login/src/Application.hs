@@ -11,6 +11,8 @@ import Data.Text.Lazy (toStrict)
 import Data.Text.Encoding
 import Text.EDE
 
+import Database.Redis
+
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai              as Wai
 import Network.Wai.Session
@@ -19,44 +21,55 @@ import Network.HTTP.Types.Method (methodGet, methodPost)
 
 import Model
 import Auth.Password
+import Auth.Session
+import Auth.Authentication
 
 app :: Int -> IO ()
 app port = do
-    print $ hashedPassword "password"
-    uuid <- nextRandom
-    pool <- pgPool
-    insertUser pool $ User { _userUid      = show uuid
-                           , _userEmail    = "sample@example.com"
-                           , _userPassword = "password" }
-    users <- getUsers pool
-    print users
+    -- print $ hashedPassword "password"
+    -- uuid <- nextRandom
+    -- session <- pgsession
+    -- insertUser session $ User { _userUid      = show uuid
+    --                        , _userEmail    = "sample@example.com"
+    --                        , _userPassword = "password" }
+    -- users <- getUsers session
+    -- print users
+    session <- checkedConnect redisConnInfo
     putStrLn $ "Running on http://localhost:" ++ show port
-    Warp.run port $ router pool
-
-router :: ConnectionPool -> Wai.Application
-router pool req = case Wai.pathInfo req of
-    []           -> index pool req
-    ["login"]    -> login pool req
-    ["register"] -> register pool req
-    _            -> notFound pool req
-
-index :: ConnectionPool -> Wai.Application
-index pool req send = case Wai.requestMethod req of
-    methodGet  -> indexImpl pool req send
-    _          -> notFound pool req send
+    Warp.run port $ router $ SessionStoreRedis { conn = session }
     where
-        indexImpl pool req send = do
+        redisConnInfo = defaultConnectInfo {
+            connectHost = "localhost"
+          , connectPort = PortNumber 6379
+        }
+
+router :: SessionIO a => a -> Wai.Application
+router session req = \send -> withAuth $ case Wai.pathInfo req of
+    []           -> index session req send
+    ["login"]    -> login session req send
+    ["register"] -> register session req  send
+    _            -> notFound session req  send
+
+index :: SessionIO a => a -> AuthApplication
+index session req send = case Wai.requestMethod req of
+    methodGet  -> do
+        authRequired session "/" "/login" req send
+        indexImpl session req send
+    _          -> notFound session req send
+    where
+        indexImpl session req send = Right $ do
+            print $ Wai.rawPathInfo req
             tpl <- eitherParseFile "public/templates/index.html"
             let env  = fromPairs []
                 body = either error toStrict $ tpl >>= (`eitherRender` env)
                 in send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
 
-login :: ConnectionPool -> Wai.Application
-login pool req send = case Wai.requestMethod req of 
-    methodGet -> do send $ Wai.responseBuilder HTypes.status200 [] ""
+login :: SessionIO a => a -> AuthApplication
+login session req send = case Wai.requestMethod req of 
+    methodGet -> do Right $ send $ Wai.responseBuilder HTypes.status200 [] "login"
 
-register :: ConnectionPool -> Wai.Application
-register pool req send = send $ Wai.responseBuilder HTypes.status200 [] ""
+register :: SessionIO a => a -> AuthApplication
+register session req send = Right $ send $ Wai.responseBuilder HTypes.status200 [] ""
 
-notFound :: ConnectionPool -> Wai.Application
-notFound pool req send = send $ Wai.responseBuilder HTypes.status404 [] "Not Found"
+notFound :: SessionIO a => a -> AuthApplication
+notFound session req send = Right $ send $ Wai.responseBuilder HTypes.status404 [] "Not Found"

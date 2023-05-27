@@ -21,6 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
+- mtl
+- containers
+- either
+- bytestring
 
 ghc-options:
 - -Wall
@@ -56,7 +60,7 @@ library:
   - hedis
   - unliftio-core
   - mtl
-
+  - network-uri
 
 executables:
   single-login-exe:
