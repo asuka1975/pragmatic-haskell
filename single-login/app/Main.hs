@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Main (main) where
 
 import Application
@@ -6,6 +7,7 @@ import Data.IORef           (IORef, newIORef, readIORef, writeIORef)
 import Control.Monad.Reader (ReaderT, runReaderT, ask)
 import Control.Monad.State  (liftIO)
 import qualified Data.Map.Strict as M
+import qualified Data.ByteString as B
 
 data Info = Info {
     password  :: String
@@ -35,24 +37,33 @@ instance SessionIO MemorySession where
 withAuth :: SessionIO a => a -> Either (IO Res) (IO Res) -> IO Res
 withAuth session r  = runReaderT (withAuth' r) session
     where
-        withAuth' (Left a)  = liftIO a
+        withAuth' (Left a)  = do
+            p <- ask
+            liftIO a
         withAuth' (Right a) = liftIO a
 
 authRequired :: Info -> String -> Either (IO Res) (IO ())
-authRequired info s = case password info of
+authRequired info p = case password info of
     "password" -> Right $ return ()
-    _          -> Left  $ return $ Res { redirect = s }
+    _          -> Left  $ return $ Res { redirect = p }
+
+index :: Info -> Either (IO Res) (IO Res)
+index info = do
+    authRequired info "login"
+    Right $ return $ Res { redirect = path info }
+
+other :: Info -> Either (IO Res) (IO Res)
+other info = do
+    Right $ return $ Res { redirect = path info }
+
 
 main :: IO ()
 main = do
     c <- newIORef $ M.fromList [("id", "10"), ("id_", "20")]
     session <- return $ MemorySession { content = c }
     r <- withAuth session $ case (path info) of
-            "/"  -> do
-                authRequired info "login"
-                Right $ return $ Res { redirect = path info }
-            _    -> do
-                Right $ return $ Res { redirect = path info }
+            "/"  -> index info
+            _    -> other info
     print r
     app 8080
     where

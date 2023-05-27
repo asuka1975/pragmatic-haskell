@@ -24,6 +24,7 @@ dependencies:
 - mtl
 - containers
 - either
+- bytestring
 
 ghc-options:
 - -Wall
@@ -59,7 +60,7 @@ library:
   - hedis
   - unliftio-core
   - mtl
-
+  - network-uri
 
 executables:
   single-login-exe:
