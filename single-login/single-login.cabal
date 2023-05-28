@@ -54,9 +54,11 @@ library
     , text
     , transformers
     , unliftio-core
+    , utf8-string
     , uuid
     , vault
     , wai
+    , wai-extra
     , wai-session
     , warp
     , yaml
