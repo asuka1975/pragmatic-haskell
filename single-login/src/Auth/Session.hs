@@ -6,21 +6,35 @@ module Auth.Session
 
 import Database.Redis
 import Data.ByteString
-import Control.Monad.State (liftIO)
+import Codec.Binary.UTF8.String 
+import Control.Monad.Cont (MonadIO(liftIO))
 
-type UserId      = ByteString
 type UserSession = ByteString
 
-data SessionStoreRedis = SessionStoreRedis {
+newtype SessionStoreRedis = SessionStoreRedis {
     conn :: Connection
 }
 
+toByteString :: String -> ByteString
+toByteString s = pack $ encode s
+
+createSessionId :: IO ByteString
+createSessionId = do
+    return $ toByteString "sessionwao"
+
 class SessionIO a where
-    verify :: a -> UserId -> UserSession -> IO Bool
+    verify :: a -> UserSession -> IO Bool
+    create :: a -> IO UserSession
 
 instance SessionIO SessionStoreRedis where
-    verify rds userId userSessionChallenge = do
+    verify rds userSession = do
         runRedis (conn rds) $ do
-            userSession <- get userId
-            liftIO $ return $ userSession == (Right $ Just $ userSessionChallenge)
+            existed <- get userSession
+            return $ existed == (Right $ Just $ toByteString "")
+    create rds = do
+        runRedis (conn rds) $ do
+            sid <- liftIO createSessionId
+            _ <- set sid $ toByteString ""
+            _ <- expire sid 60
+            return sid
 
