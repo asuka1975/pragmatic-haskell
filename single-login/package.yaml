@@ -45,6 +45,7 @@ library:
   - ede
   - text
   - wai
+  - wai-extra
   - wai-session
   - warp
   - http-types
@@ -61,6 +62,8 @@ library:
   - unliftio-core
   - mtl
   - network-uri
+  - utf8-string
+
 
 executables:
   single-login-exe:
