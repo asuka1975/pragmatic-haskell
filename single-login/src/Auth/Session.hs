@@ -1,7 +1,7 @@
 module Auth.Session
     (
         SessionStoreRedis (..)
-      , SessionIO 
+      , SessionIO (..)
     ) where 
 
 import Database.Redis

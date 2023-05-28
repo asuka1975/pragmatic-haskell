@@ -3,9 +3,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Auth.Authentication
     (
-        AuthApplication
-      , withAuth
-      , authRequired
+        authRequired
     ) where
 
 import Database.Persist.Postgresql
@@ -22,22 +20,34 @@ import Network.URI
 
 import Auth.Session
 
-type AuthApplication = Wai.Request -> (Wai.Response -> IO Wai.ResponseReceived) -> Either (IO Wai.ResponseReceived) (IO Wai.ResponseReceived)
 
 tuplify :: [a] -> (a, a)
 tuplify [x, y] = (x, y)
 
-withAuth :: Either (IO Wai.ResponseReceived) (IO Wai.ResponseReceived) -> IO Wai.ResponseReceived
-withAuth (Left app)  = app
-withAuth (Right app) = app
 
-authRequired :: SessionIO a => a -> B.ByteString -> B.ByteString -> AuthApplication
-authRequired session from login req send = do
-    Left $ send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
+
+authRequired :: SessionIO a => a -> B.ByteString -> B.ByteString -> Wai.Request -> (Wai.Response -> IO Wai.ResponseReceived) -> IO Wai.ResponseReceived -> IO Wai.ResponseReceived  
+authRequired session from login req send app = do
+    authRequired'' $ authRequired' userId userSession
     where
-        headers   = M.fromList $ Wai.requestHeaders req
-        cookie    = headers M.!? HTypes.hCookie
+        headers     = M.fromList $ Wai.requestHeaders req
+        cookie      = headers M.!? HTypes.hCookie
         makeCookieMap Nothing  = []
         makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
-        cookieMap = M.fromList $ makeCookieMap cookie
+        cookieMap   = M.fromList $ makeCookieMap cookie
+        userId      = cookieMap M.!? "userid"
+        userSession = cookieMap M.!? "sessionid"
+        authRequired' uidEith usEith = do
+            uid <- uidEith
+            us  <- usEith
+            return (uid, us)
+        authRequired'' (Just (uid, us)) = do
+            authenticated <- verify session uid us
+            if authenticated
+                then app
+                else send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
+        authRequired'' Nothing = send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
+
+        
+
 

@@ -44,32 +44,32 @@ app port = do
         }
 
 router :: SessionIO a => a -> Wai.Application
-router session req = \send -> withAuth $ case Wai.pathInfo req of
-    []           -> index session req send
-    ["login"]    -> login session req send
-    ["register"] -> register session req  send
-    _            -> notFound session req  send
+router session req = case Wai.pathInfo req of
+    []           -> index session req 
+    ["login"]    -> login session req 
+    ["register"] -> register session req  
+    _            -> notFound session req
 
-index :: SessionIO a => a -> AuthApplication
+index :: SessionIO a => a -> Wai.Application
 index session req send = case Wai.requestMethod req of
     methodGet  -> do
         authRequired session "/" "/login" req send
-        indexImpl session req send
+            $ indexImpl session req send
     _          -> notFound session req send
     where
-        indexImpl session req send = Right $ do
+        indexImpl session req send = do
             print $ Wai.rawPathInfo req
             tpl <- eitherParseFile "public/templates/index.html"
             let env  = fromPairs []
                 body = either error toStrict $ tpl >>= (`eitherRender` env)
                 in send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
 
-login :: SessionIO a => a -> AuthApplication
+login :: SessionIO a => a -> Wai.Application
 login session req send = case Wai.requestMethod req of 
-    methodGet -> do Right $ send $ Wai.responseBuilder HTypes.status200 [] "login"
+    methodGet -> do send $ Wai.responseBuilder HTypes.status200 [] "login"
 
-register :: SessionIO a => a -> AuthApplication
-register session req send = Right $ send $ Wai.responseBuilder HTypes.status200 [] ""
+register :: SessionIO a => a -> Wai.Application
+register session req send = send $ Wai.responseBuilder HTypes.status200 [] ""
 
-notFound :: SessionIO a => a -> AuthApplication
-notFound session req send = Right $ send $ Wai.responseBuilder HTypes.status404 [] "Not Found"
+notFound :: SessionIO a => a -> Wai.Application
+notFound session req send = send $ Wai.responseBuilder HTypes.status404 [] "Not Found"
