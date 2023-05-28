@@ -13,10 +13,12 @@ import qualified Data.Map as M
 import qualified Data.ByteString as B
 import Codec.Binary.UTF8.String 
 
+import Control.Monad.State (liftIO)
+
 import Database.Redis
-import Database.Persist
+import Database.Persist hiding (get)
 import Database.Persist.TH
-import Database.Persist.Postgresql
+import Database.Persist.Postgresql hiding (get)
 
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai              as Wai
@@ -44,6 +46,9 @@ app port = do
     --                           , _userEmail    = "sample@example.com"
     --                           , _userPassword = hashedPassword "password" }
     session <- checkedConnect redisConnInfo
+    runRedis session $ do
+        a <- get "uid1"
+        liftIO $ print a
     putStrLn $ "Running on http://localhost:" ++ show port
     Warp.run port $ router pool $ SessionStoreRedis { conn = session }
     where
@@ -84,7 +89,9 @@ login pool session req send = case Wai.requestMethod req of
             ep       = getUserAndPassword (paramMap M.!? "email") (paramMap M.!? "password")
         b <- authenticate ep
         if b
-            then send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "userid=uid1"), (hSetCookie, "sessionid=session1")] ""
+            then do
+                s <- create session
+                send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "sessionid=" <> s)] ""
             else send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/login")] ""
         where
             getUserAndPassword emailMaybe passwordMaybe = do
@@ -96,6 +103,7 @@ login pool session req send = case Wai.requestMethod req of
                 let authInfo = map (\u -> (B.pack $ encode $ _userEmail u, _userPassword u)) $ map (entityVal) users
                 return $ Just (email, hashedPassword password) == (head' authInfo)
             authenticate Nothing                  = return False
+    _      -> notFound pool session req send
 
 
 register :: SessionIO a => ConnectionPool -> a -> Wai.Application
