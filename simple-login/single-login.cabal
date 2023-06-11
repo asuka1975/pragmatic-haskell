@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Application
+      Auth.Auth
       Auth.Authentication
       Auth.Password
       Auth.Session
