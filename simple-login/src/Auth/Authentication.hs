@@ -13,7 +13,8 @@ module Auth.Authentication
 
 import Database.Persist.Postgresql
 import Database.Redis.Sentinel
-import qualified Network.Wai     as Wai
+import qualified Network.Wai            as Wai
+import qualified Network.Wai.Internal   as WaiI
 import qualified Data.Map        as M
 import qualified Data.ByteString as B
 
@@ -88,7 +89,7 @@ authRequired :: SessionIO a => B.ByteString -> Wai.Request -> (Wai.Response -> I
 authRequired login req send = AuthCtx $ do
     session <- ask
     liftIO $ do
-        authRequired' session userSession loginPage emptyPage
+        authRequired' session userSession loginPage
     where
         headers     = M.fromList $ Wai.requestHeaders req
         cookie      = headers M.!? HTypes.hCookie
@@ -96,18 +97,16 @@ authRequired login req send = AuthCtx $ do
         makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
         cookieMap   = M.fromList $ makeCookieMap cookie
         userSession = cookieMap M.!? "sessionid"
-        emptyPage   = Wai.responseBuilder HTypes.status200 [] "sample"
         loginPage   = Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
-        authRequired' session (Just s) p1 p2 = do
+        authRequired' session (Just s) p1  = do
             ok <- verify session s
             if ok
                 then do
-                    p <- send p2
-                    return $ Right p
+                    return $ Right WaiI.ResponseReceived
                 else do
                     p <- send p1
                     return $ Left p
-        authRequired' _ Nothing p1 _ = do
+        authRequired' _ Nothing p1 = do
             p <- send p1
             return $ Left p
 

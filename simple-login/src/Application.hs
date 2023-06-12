@@ -69,8 +69,8 @@ router pool session req send = do
 
 index :: SessionIO a => ConnectionPool -> a -> AuthApplication a
 index pool session req send = do
-        authRequired "/login" req send
-        indexImpl session req send
+    authRequired "/login" req send
+    indexImpl session req send
     where
         indexImpl session req send = do
             tpl <- liftIO $ eitherParseFile "public/templates/index.html"
