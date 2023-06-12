@@ -32,6 +32,7 @@ import Model
 import Auth.Password
 import Auth.Session
 import Auth.Authentication
+import Data.Typeable (typeOf)
 
 head' :: [a] -> Maybe a
 head' []    = Nothing

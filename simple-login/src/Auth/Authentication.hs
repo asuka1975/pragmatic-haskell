@@ -6,7 +6,7 @@ module Auth.Authentication
         withAuth
       , authRequired
       , send'
-      , return' 
+      , return'
       , AuthCtx (..)
       , AuthApplication
     ) where
@@ -88,9 +88,7 @@ authRequired :: SessionIO a => B.ByteString -> Wai.Request -> (Wai.Response -> I
 authRequired login req send = AuthCtx $ do
     session <- ask
     liftIO $ do
-        empty  <- emptyPage
-        login' <- loginPage
-        authRequired' session userSession login' empty
+        authRequired' session userSession loginPage emptyPage
     where
         headers     = M.fromList $ Wai.requestHeaders req
         cookie      = headers M.!? HTypes.hCookie
@@ -98,34 +96,19 @@ authRequired login req send = AuthCtx $ do
         makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
         cookieMap   = M.fromList $ makeCookieMap cookie
         userSession = cookieMap M.!? "sessionid"
-        emptyPage   = send $ Wai.responseBuilder HTypes.status200 [] "sample"
-        loginPage   = send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
+        emptyPage   = Wai.responseBuilder HTypes.status200 [] "sample"
+        loginPage   = Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
         authRequired' session (Just s) p1 p2 = do
             ok <- verify session s
-            return $ if ok
-                then Right $ p2
-                else Left  $ p1
-        authRequired' _ Nothing p1 _  = return $ Left $ p1
-
-
-
--- authRequired :: SessionIO a => a -> B.ByteString -> B.ByteString -> Wai.Request -> (Wai.Response -> IO Wai.ResponseReceived) -> IO Wai.ResponseReceived -> IO Wai.ResponseReceived  
--- authRequired session from login req send app = do
---     authRequired' userSession
---     where
---         headers     = M.fromList $ Wai.requestHeaders req
---         cookie      = headers M.!? HTypes.hCookie
---         makeCookieMap Nothing  = []
---         makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
---         cookieMap   = M.fromList $ makeCookieMap cookie
---         userSession = cookieMap M.!? "sessionid"
---         authRequired' (Just s) = do
---             authenticated <- verify session s
---             if authenticated
---                 then app
---                 else send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
---         authRequired' Nothing = send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
-
-
+            if ok
+                then do
+                    p <- send p2
+                    return $ Right p
+                else do
+                    p <- send p1
+                    return $ Left p
+        authRequired' _ Nothing p1 _ = do
+            p <- send p1
+            return $ Left p
 
 
