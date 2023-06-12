@@ -58,41 +58,42 @@ app port = do
         }
 
 router :: SessionIO a => ConnectionPool -> a -> Wai.Application
-router pool session req = do
-    case Wai.pathInfo req of
-        []           -> index pool session req
-        ["login"]    -> login pool session req
-        ["register"] -> register pool session req
-        _            -> notFound pool session req
+router pool session req send = do
+    withAuth session $ do
+        case Wai.pathInfo req of
+            []           -> index pool session req send
+            ["login"]    -> login pool session req send
+            ["register"] -> register pool session req send
+            _            -> notFound pool session req send
 
-index :: SessionIO a => ConnectionPool -> a -> Wai.Application
+index :: SessionIO a => ConnectionPool -> a -> AuthApplication a
 index pool session req send = do
-        authRequired session "/" "/login" req send
-            $ indexImpl session req send
+        authRequired "/login" req send
+        indexImpl session req send
     where
         indexImpl session req send = do
-            tpl <- eitherParseFile "public/templates/index.html"
+            tpl <- liftIO $ eitherParseFile "public/templates/index.html"
             let env  = fromPairs []
                 body = either error toStrict $ tpl >>= (`eitherRender` env)
-                in send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
+                in return' $ send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
 
-login :: SessionIO a => ConnectionPool -> a -> Wai.Application
+login :: SessionIO a => ConnectionPool -> a -> AuthApplication a
 login pool session req send = case Wai.requestMethod req of 
     "GET" -> do 
-        tpl <- eitherParseFile "public/templates/login.html"
+        tpl <- liftIO $ eitherParseFile "public/templates/login.html"
         let env  = fromPairs []
             body = either error toStrict $ tpl >>= (`eitherRender` env)
-            in send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
+            in return' $ send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
     "POST" -> do
-        (params, files) <- parseRequestBody lbsBackEnd req
+        (params, files) <- liftIO $ parseRequestBody lbsBackEnd req
         let paramMap = M.fromList params
             ep       = getUserAndPassword (paramMap M.!? "email") (paramMap M.!? "password")
-        b <- authenticate ep
+        b <- liftIO $ authenticate ep
         if b
             then do
-                s <- create session
-                send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "sessionid=" <> s)] ""
-            else send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/login")] ""
+                s <- liftIO $ create session
+                return' $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "sessionid=" <> s)] ""
+            else return' $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/login")] ""
         where
             getUserAndPassword emailMaybe passwordMaybe = do
                 email <- emailMaybe
@@ -106,8 +107,8 @@ login pool session req send = case Wai.requestMethod req of
     _      -> notFound pool session req send
 
 
-register :: SessionIO a => ConnectionPool -> a -> Wai.Application
-register pool session req send = send $ Wai.responseBuilder HTypes.status200 [] ""
+register :: SessionIO a => ConnectionPool -> a -> AuthApplication a
+register pool session req send = return' $ send $ Wai.responseBuilder HTypes.status200 [] ""
 
-notFound :: SessionIO a => ConnectionPool -> a -> Wai.Application
-notFound pool session req send = send $ Wai.responseBuilder HTypes.status404 [] "Not Found"
+notFound :: SessionIO a => ConnectionPool -> a -> AuthApplication a
+notFound pool session req send = return' $ send $ Wai.responseBuilder HTypes.status404 [] "Not Found"

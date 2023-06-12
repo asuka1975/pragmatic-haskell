@@ -6,6 +6,7 @@ module Auth.Authentication
         withAuth
       , authRequired
       , send'
+      , return' 
       , AuthCtx (..)
       , AuthApplication
     ) where
@@ -52,6 +53,11 @@ instance Monad (AuthCtx ctx c) where
             f' (Left l)  = AuthCtx $ return $ Left l
             f' (Right r) = f r
 
+instance MonadIO (AuthCtx ctx c) where
+    liftIO rio = AuthCtx $ do
+        liftIO $ do
+            Right <$> rio
+
 tuplify :: [a] -> (a, a)
 tuplify [x, y] = (x, y)
 
@@ -92,14 +98,14 @@ authRequired login req send = AuthCtx $ do
         makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
         cookieMap   = M.fromList $ makeCookieMap cookie
         userSession = cookieMap M.!? "sessionid"
-        emptyPage   = send $ Wai.responseBuilder HTypes.status200 [] ""
+        emptyPage   = send $ Wai.responseBuilder HTypes.status200 [] "sample"
         loginPage   = send $ Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
         authRequired' session (Just s) p1 p2 = do
             ok <- verify session s
             return $ if ok
                 then Right $ p2
                 else Left  $ p1
-        authRequired' _ Nothing _ p2  = return $ Left $ p2
+        authRequired' _ Nothing p1 _  = return $ Left $ p1
 
 
 
