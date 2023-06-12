@@ -1,38 +1,33 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Application 
+module Application
     (
         app
     ) where
 
-import Data.Yaml.Config
 import Data.UUID.V4   (nextRandom)
 import Data.Text.Lazy (toStrict)
 import Data.Text.Encoding
 import Text.EDE
 import qualified Data.Map as M
 import qualified Data.ByteString as B
-import Codec.Binary.UTF8.String 
+import Codec.Binary.UTF8.String
 
 import Control.Monad.State (liftIO)
 
 import Database.Redis
 import Database.Persist hiding (get)
-import Database.Persist.TH
 import Database.Persist.Postgresql hiding (get)
 
 import qualified Network.Wai.Handler.Warp as Warp
 import qualified Network.Wai              as Wai
 import Network.Wai.Parse
-import Network.Wai.Session
 import qualified Network.HTTP.Types       as HTypes
 import Network.HTTP.Types.Header  (hSetCookie)
-import Network.HTTP.Types.Method (methodGet, methodPost)
 
 import Model
 import Auth.Password
 import Auth.Session
 import Auth.Authentication
-import Data.Typeable (typeOf)
 
 head' :: [a] -> Maybe a
 head' []    = Nothing
@@ -40,16 +35,12 @@ head' (x:_) = Just x
 
 app :: Int -> IO ()
 app port = do
-    print $ hashedPassword "password"
     uuid <- nextRandom
     pool <- pgPool
-    -- insertUser pool $ User { _userUid      = show uuid
-    --                           , _userEmail    = "sample@example.com"
-    --                           , _userPassword = hashedPassword "password" }
+    _ <- insertUser pool $ User { _userUid      = show uuid
+                                , _userEmail    = "sample@example.com"
+                                , _userPassword = hashedPassword "password" }
     session <- checkedConnect redisConnInfo
-    runRedis session $ do
-        a <- get "uid1"
-        liftIO $ print a
     putStrLn $ "Running on http://localhost:" ++ show port
     Warp.run port $ router pool $ SessionStoreRedis { conn = session }
     where
@@ -68,33 +59,33 @@ router pool session req send = do
             _            -> notFound pool session req send
 
 index :: SessionIO a => ConnectionPool -> a -> AuthApplication a
-index pool session req send = do
-    authRequired "/login" req send
+index _ session req send = do
+    _ <- authRequired "login" req send
     indexImpl session req send
     where
-        indexImpl session req send = do
+        indexImpl _ _ send' = do
             tpl <- liftIO $ eitherParseFile "public/templates/index.html"
             let env  = fromPairs []
                 body = either error toStrict $ tpl >>= (`eitherRender` env)
-                in return' $ send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
+                in liftIO $ send' $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
 
 login :: SessionIO a => ConnectionPool -> a -> AuthApplication a
-login pool session req send = case Wai.requestMethod req of 
-    "GET" -> do 
+login pool session req send = case Wai.requestMethod req of
+    "GET" -> do
         tpl <- liftIO $ eitherParseFile "public/templates/login.html"
         let env  = fromPairs []
             body = either error toStrict $ tpl >>= (`eitherRender` env)
-            in return' $ send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
+            in liftIO $ send $ Wai.responseBuilder HTypes.status200 [("Content-Type", "text/html")] $ encodeUtf8Builder body
     "POST" -> do
-        (params, files) <- liftIO $ parseRequestBody lbsBackEnd req
+        (params, _) <- liftIO $ parseRequestBody lbsBackEnd req
         let paramMap = M.fromList params
             ep       = getUserAndPassword (paramMap M.!? "email") (paramMap M.!? "password")
         b <- liftIO $ authenticate ep
         if b
             then do
                 s <- liftIO $ create session
-                return' $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "sessionid=" <> s)] ""
-            else return' $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/login")] ""
+                liftIO $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/"), (hSetCookie, "sessionid=" <> s)] ""
+            else liftIO $ send $ Wai.responseBuilder HTypes.status303 [(HTypes.hLocation, "/login")] ""
         where
             getUserAndPassword emailMaybe passwordMaybe = do
                 email <- emailMaybe
@@ -102,14 +93,14 @@ login pool session req send = case Wai.requestMethod req of
                 return (email, password)
             authenticate (Just (email, password)) = do
                 users <- getUsers pool
-                let authInfo = map (\u -> (B.pack $ encode $ _userEmail u, _userPassword u)) $ map (entityVal) users
-                return $ Just (email, hashedPassword password) == (head' authInfo)
+                let authInfo = map ((\u -> (B.pack $ encode $ _userEmail u, _userPassword u)) . entityVal) users
+                return $ Just (email, hashedPassword password) == head' authInfo
             authenticate Nothing                  = return False
     _      -> notFound pool session req send
 
 
-register :: SessionIO a => ConnectionPool -> a -> AuthApplication a
-register pool session req send = return' $ send $ Wai.responseBuilder HTypes.status200 [] ""
+register :: ConnectionPool -> a -> AuthApplication a
+register _ _ _ send = liftIO $ send $ Wai.responseBuilder HTypes.status200 [] ""
 
-notFound :: SessionIO a => ConnectionPool -> a -> AuthApplication a
-notFound pool session req send = return' $ send $ Wai.responseBuilder HTypes.status404 [] "Not Found"
+notFound :: ConnectionPool -> a -> AuthApplication a
+notFound _ _ _ send = liftIO $ send $ Wai.responseBuilder HTypes.status404 [] "Not Found"

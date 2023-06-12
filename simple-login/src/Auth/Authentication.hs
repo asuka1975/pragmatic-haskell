@@ -1,33 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 module Auth.Authentication
     (
         withAuth
       , authRequired
-      , send'
-      , return'
       , AuthCtx (..)
       , AuthApplication
     ) where
 
-import Database.Persist.Postgresql
-import Database.Redis.Sentinel
 import qualified Network.Wai            as Wai
 import qualified Network.Wai.Internal   as WaiI
 import qualified Data.Map        as M
 import qualified Data.ByteString as B
 
 import Control.Monad.Reader
-import Data.IORef
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Network.HTTP.Types       as HTypes
-import Network.URI
 
 import Auth.Session
-import GHC.TopHandler (runIO)
+import Data.ByteString (ByteString)
 
-data AuthCtx ctx a b = AuthCtx  (ReaderT ctx IO (Either a b))
+newtype AuthCtx ctx a b = AuthCtx  (ReaderT ctx IO (Either a b))
 type AuthApplication a = Wai.Request -> (Wai.Response -> IO Wai.ResponseReceived) -> AuthCtx a Wai.ResponseReceived Wai.ResponseReceived
 
 instance Functor (AuthCtx ctx c) where
@@ -59,22 +51,11 @@ instance MonadIO (AuthCtx ctx c) where
         liftIO $ do
             Right <$> rio
 
-tuplify :: [a] -> (a, a)
+tuplify :: [ByteString] -> (ByteString, ByteString)
+tuplify []     = ("", "")
+tuplify [x]    = (x, "")
 tuplify [x, y] = (x, y)
-
-left x = AuthCtx $ return $ Left x
-
-
-return' :: SessionIO a => IO Wai.ResponseReceived -> AuthCtx a Wai.ResponseReceived Wai.ResponseReceived
-return' rio = AuthCtx $ do
-    liftIO $ do
-        Right <$> rio
-
-send' :: SessionIO a => (Wai.Response -> IO Wai.ResponseReceived) -> Wai.Response -> AuthCtx a Wai.ResponseReceived Wai.ResponseReceived
-send' send r = AuthCtx $ do
-    liftIO $ do
-        rs <- send r
-        return $ Right rs
+tuplify (x:xs) = (x, B.concat xs)
 
 withAuth :: a -> AuthCtx a Wai.ResponseReceived Wai.ResponseReceived -> IO Wai.ResponseReceived
 withAuth x ctx = do
@@ -94,7 +75,7 @@ authRequired login req send = AuthCtx $ do
         headers     = M.fromList $ Wai.requestHeaders req
         cookie      = headers M.!? HTypes.hCookie
         makeCookieMap Nothing  = []
-        makeCookieMap (Just c) = map (tuplify . B.split 61) $ map (B.dropWhile (==32)) $ B.split 59 c
+        makeCookieMap (Just c) = map ((tuplify . B.split 61) . B.dropWhile (==32)) (B.split 59 c)
         cookieMap   = M.fromList $ makeCookieMap cookie
         userSession = cookieMap M.!? "sessionid"
         loginPage   = Wai.responseBuilder HTypes.status307 [(HTypes.hLocation, login)] ""
